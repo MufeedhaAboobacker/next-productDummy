@@ -13,26 +13,37 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import { getDeletedDummyIds, softDeleteDummyProduct } from '@/lib/deleteUtils';
 
+export interface Product {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  thumbnail: string;
+  category?: string;
+  image?: string;
+  deleted?: boolean;
+}
+
 const HomePage = () => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [localProducts, setLocalProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const loadProducts = () => {
-    const local = JSON.parse(localStorage.getItem('localProducts') || '[]');
-    const filteredLocal = local.filter((p: any) => !p.deleted);
+    const local: Product[] = JSON.parse(localStorage.getItem('localProducts') || '[]');
+    const filteredLocal = local.filter((p) => !p.deleted);
     setLocalProducts(filteredLocal);
 
     api
       .get('/products')
       .then((res) => {
         const deletedIds = getDeletedDummyIds();
-        const dummyProducts = res.data.products.map((p: any) => {
+        const dummyProducts: Product[] = res.data.products.map((p: Product) => {
           const edited = localStorage.getItem(`dummy-${p.id}`);
           return edited ? JSON.parse(edited) : p;
         });
-        const filteredDummy = dummyProducts.filter((p: any) => !deletedIds.includes(p.id));
+        const filteredDummy = dummyProducts.filter((p) => !deletedIds.includes(p.id));
         setProducts(filteredDummy);
       })
       .catch(console.error)
@@ -53,11 +64,11 @@ const HomePage = () => {
       setLocalProducts(updated.filter((p) => !p.deleted));
     } else {
       softDeleteDummyProduct(id);
-      setProducts((prev) => prev.filter((p: any) => p.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     }
   };
 
-  const merged = [
+  const merged: Product[] = [
     ...localProducts,
     ...products.filter((p) => !localProducts.some((lp) => lp.id === p.id)),
   ];
@@ -79,7 +90,6 @@ const HomePage = () => {
           </Link>
         </Box>
 
-        
         <Box mb={4}>
           <input
             type="text"
@@ -90,7 +100,6 @@ const HomePage = () => {
           />
         </Box>
 
-        
         {loading ? (
           <Grid container justifyContent="center" sx={{ py: 10 }}>
             <CircularProgress />
@@ -101,7 +110,7 @@ const HomePage = () => {
           </Typography>
         ) : (
           <Grid container spacing={4}>
-            {filteredProducts.map((product: any, index) => (
+            {filteredProducts.map((product, index) => (
               <Grid key={product.id || index} item xs={12} sm={6} md={4}>
                 <ProductCard
                   product={product}

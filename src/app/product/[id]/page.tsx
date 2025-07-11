@@ -1,20 +1,33 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { softDeleteDummyProduct } from '@/lib/deleteUtils';
 
+export interface Product {
+  id: number | string;
+  title: string;
+  description: string;
+  price: number | string;
+  thumbnail: string;
+  category?: string;
+  image?: string;
+  deleted?: boolean;
+}
+
+
 const ProductDetailPage = () => {
   const { id } = useParams();
   const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [isLocalProduct, setIsLocalProduct] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
-    const local = JSON.parse(localStorage.getItem('localProducts') || '[]');
-    const localMatch = local.find((p: any) => String(p.id) === String(id));
+    const local: Product[] = JSON.parse(localStorage.getItem('localProducts') || '[]');
+    const localMatch = local.find((p) => String(p.id) === String(id));
 
     if (localMatch) {
       setProduct(localMatch);
@@ -22,30 +35,37 @@ const ProductDetailPage = () => {
     } else {
       const editedDummy = localStorage.getItem(`dummy-${id}`);
       if (editedDummy) {
-        setProduct(JSON.parse(editedDummy));
+        setProduct(JSON.parse(editedDummy) as Product);
       } else {
         api.get(`/products/${id}`)
-          .then((res) => setProduct(res.data))
+          .then((res) => setProduct(res.data as Product))
           .catch(console.error);
       }
     }
   }, [id]);
 
   const handleDelete = () => {
+    if (!id || !product) return;
+
     if (isLocalProduct) {
-      const local = JSON.parse(localStorage.getItem('localProducts') || '[]');
-      const updated = local.map((p: any) =>
+      const local: Product[] = JSON.parse(localStorage.getItem('localProducts') || '[]');
+      const updated = local.map((p) =>
         String(p.id) === String(id) ? { ...p, deleted: true } : p
       );
       localStorage.setItem('localProducts', JSON.stringify(updated));
     } else {
       softDeleteDummyProduct(Number(id));
     }
+
     router.push('/');
   };
 
   const handleBack = () => router.push('/');
-  const handleEdit = () => router.push(`/edit/${product.id}`);
+  const handleEdit = () => {
+    if (product) {
+      router.push(`/product/edit/${product.id}`);
+    }
+  };
 
   if (!product) {
     return <div className="p-8 text-center text-gray-500 text-lg">Loading product...</div>;
